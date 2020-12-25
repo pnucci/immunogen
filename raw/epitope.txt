@@ -1,0 +1,5 @@
+Current Filters:
+Positive Assays Only
+No B cell assays
+No MHC ligand assays
+MHC Restriction Type: HLA-A*02:01 protein complex (ID:MRO_0001007, HLA-A*02:01)
