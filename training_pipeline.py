@@ -1,6 +1,7 @@
 # %%
+%load_ext autoreload
+%autoreload 2
 import seaborn as sn
-from sklearn.metrics import confusion_matrix as cam
 from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from tensorflow.keras import layers, utils
@@ -9,6 +10,7 @@ import dataset
 import matplotlib.pyplot as plt
 import pandas as pd
 import cnn_solution
+import lstm_solution
 # %%
 
 df = dataset.df.sample(frac=1)
@@ -23,13 +25,19 @@ print(train.y.value_counts())
 print(test.y.value_counts())
 
 train_X = np.stack(train.X.values)
-train_X = train_X.reshape(*train_X.shape, 1)
 train_y = utils.to_categorical(train.y.values)
 test_X = np.stack(test.X.values)
-test_X = test_X.reshape(*test_X.shape, 1)
 test_y = utils.to_categorical(test.y.values)
-input_shape = (*train.X.iloc[0].shape, 1)
+
+# LSTM
 # input_shape = train.X.iloc[0].shape
+
+# CNN
+train_X = train_X.reshape(*train_X.shape, 1)
+test_X = test_X.reshape(*test_X.shape, 1)
+input_shape = (*train.X.iloc[0].shape, 1)
+
+print('train_X.shape', train_X.shape)
 print('input_shape', input_shape)
 print(train_X.shape, train_y.shape)
 print(test_X.shape, test_y.shape)
@@ -38,6 +46,7 @@ num_outputs = len(classes)
 print('num_outputs', num_outputs)
 
 model = cnn_solution.build_model(input_shape)
+# model = lstm_solution.build_model(input_shape)
 model.add(
     layers.Dense(units=num_outputs, activation='softmax')
 )
@@ -85,7 +94,7 @@ pred_df = pd.DataFrame({
 # %%
 # plt.figure(figsize=(10, 7))
 df_cm = pd.DataFrame(
-    cam(test_y_non_category, y_predict_non_category),
+    confusion_matrix(test_y_non_category, y_predict_non_category),
     index=[classes],
     columns=[classes]
 )
