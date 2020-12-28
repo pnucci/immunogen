@@ -22,4 +22,4 @@ y = np.array(
 )
 
 # %%
-df = pd.DataFrame({'X': X, 'y': y})
+dataset = pd.DataFrame({'X': X, 'y': y})

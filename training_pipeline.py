@@ -1,55 +1,64 @@
 # %%
-%load_ext autoreload
-%autoreload 2
+from sklearn.metrics import roc_auc_score
+from sklearn.pipeline import Pipeline
 import seaborn as sn
 from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from tensorflow.keras import layers, utils
 import numpy as np
-import dataset
+from dataset import dataset
 import matplotlib.pyplot as plt
 import pandas as pd
 import cnn_solution
 import lstm_solution
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import RepeatedStratifiedKFold, StratifiedShuffleSplit
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_validate
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import average_precision_score, make_scorer
+%load_ext autoreload
+%autoreload 2
+
+solution = lstm_solution
+
+RANDOM_SEED = 0
+N_SPLITS = 5
+N_REPEATS = 2
+early_stop_metric = 'val_loss'
+
 # %%
 
-df = dataset.df.sample(frac=1)
-print(len(df))
+print(dataset['y'].value_counts())
 
-split_frac = 0.7
-split_ix = int(split_frac*len(df))
-train = df[:split_ix]
-test = df[split_ix:]
+test_split = StratifiedShuffleSplit(
+    n_splits=1, test_size=0.3).split(dataset.X, dataset.y)
+train_ix, test_ix = list(test_split)[0]
+train = dataset.iloc[train_ix]
+test = dataset.iloc[test_ix]
 
-print(train.y.value_counts())
-print(test.y.value_counts())
+# %%
+
+train_prop = train.y.value_counts()/len(train)
+test_prop = test.y.value_counts()/len(test)
+class_proportion_preserved = np.allclose(train_prop, test_prop, atol=0.01)
+assert(class_proportion_preserved)
+
+# %%
 
 train_X = np.stack(train.X.values)
-train_y = utils.to_categorical(train.y.values)
+train_y = train.y.values
+train_y_cat = utils.to_categorical(train.y.values)
 test_X = np.stack(test.X.values)
-test_y = utils.to_categorical(test.y.values)
-
-# LSTM
-# input_shape = train.X.iloc[0].shape
-
-# CNN
-train_X = train_X.reshape(*train_X.shape, 1)
-test_X = test_X.reshape(*test_X.shape, 1)
-input_shape = (*train.X.iloc[0].shape, 1)
+test_y = test.y.values
+test_y_cat = utils.to_categorical(test.y.values)
 
 print('train_X.shape', train_X.shape)
-print('input_shape', input_shape)
 print(train_X.shape, train_y.shape)
 print(test_X.shape, test_y.shape)
 classes = np.unique(train_y)
 num_outputs = len(classes)
 print('num_outputs', num_outputs)
-
-model = cnn_solution.build_model(input_shape)
-# model = lstm_solution.build_model(input_shape)
-model.add(
-    layers.Dense(units=num_outputs, activation='softmax')
-)
 
 aupr = keras.metrics.AUC(
     curve="PR",
@@ -60,50 +69,62 @@ auroc = keras.metrics.AUC(
     name='auroc',
 )
 
-model.compile(
-    optimizer='adam',
-    loss='binary_crossentropy',
-    metrics=[aupr, auroc],
-)
 
-early_stopping = keras.callbacks.EarlyStopping(
-    patience=5,
-    min_delta=0.001,
-    restore_best_weights=True,
-)
-BATCH_SIZE = 64
-
-history = model.fit(
-    train_X, train_y,
-    validation_data=(test_X, test_y),
-    batch_size=BATCH_SIZE,
-    epochs=1000,
-    callbacks=[early_stopping],
-    verbose=1,
-)
-
-preds = model.predict(test_X, batch_size=BATCH_SIZE)
-y_predict_non_category = [np.argmax(t) for t in preds]
-test_y_non_category = [np.argmax(t) for t in test_y]
-pred_df = pd.DataFrame({
-    'pred': y_predict_non_category,
-    'label': test_y_non_category,
-})
+def build_model():
+    model = solution.build_model()
+    model.add(
+        layers.Dense(units=num_outputs, activation='softmax')
+    )
+    model.compile(
+        optimizer='adam',
+        loss='categorical_crossentropy',
+        metrics=[aupr, auroc],
+    )
+    return model
 
 
 # %%
-# plt.figure(figsize=(10, 7))
-df_cm = pd.DataFrame(
-    confusion_matrix(test_y_non_category, y_predict_non_category),
-    index=[classes],
-    columns=[classes]
+pipeline = Pipeline([
+    *solution.preprocess,
+    ('model', KerasClassifier(
+        build_fn=build_model,
+        verbose=1
+    ))
+])
+kfold = RepeatedStratifiedKFold(
+    n_splits=N_SPLITS,
+    n_repeats=N_REPEATS,
+    random_state=RANDOM_SEED
 )
-sn.heatmap(
-    df_cm,
-    annot=True,
-    cmap=plt.cm.Blues,
-    fmt='g'
+hyperparam_search = RandomizedSearchCV(
+    estimator=pipeline,
+    n_iter=2,
+    scoring=['average_precision', 'roc_auc'],
+    param_distributions=dict(
+        model__batch_size=[50, 100],
+        model__epochs=[20, 30]
+    ),
+    refit='roc_auc',
+    # n_jobs=-1,
+    cv=kfold
 )
-plt.ylabel('True')
-plt.xlabel('Predicted')
+hyperparam_search_result = hyperparam_search.fit(train_X, train_y)
 
+# %%
+print("Best: %f using %s" % (hyperparam_search_result.best_score_,
+                             hyperparam_search_result.best_params_))
+means = hyperparam_search_result.cv_results_['mean_test_roc_auc']
+stds = hyperparam_search_result.cv_results_['std_test_roc_auc']
+params = hyperparam_search_result.cv_results_['params']
+for mean, stdev, param in zip(means, stds, params):
+    print("%f (%f) with: %r" % (mean, stdev, param))
+results_df = pd.DataFrame(hyperparam_search_result.cv_results_)
+results_df.sort_values('rank_test_roc_auc')[
+    ['params', 'mean_test_roc_auc', 'std_test_roc_auc']]
+# %%
+best = hyperparam_search_result.best_estimator_
+preds = best.predict_proba(test_X)
+preds
+# %%
+roc_auc_score(test_y_cat, preds)
+# %%
