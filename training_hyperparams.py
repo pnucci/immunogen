@@ -6,12 +6,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
-from dataset import X, y
-import cnn_solution
-import lstm_solution
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.model_selection import RandomizedSearchCV
+from dataset import X, y
+import cnn_solution
+import lstm_solution
 
 RANDOM_STATE = 0
 

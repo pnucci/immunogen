@@ -8,9 +8,9 @@ from tensorflow.keras import utils
 
 
 # %%
-seqs = pathogens.peptides+self_binders.peptides
-X = [peptide.encode_peptide_seq(seq) for seq in seqs]
-X = np.stack(X)
+X_seqs = pathogens.peptides+self_binders.peptides
+X = peptide.encode_peptide_seqs(X_seqs)
+
 # %%
 y = np.array(
     [1]*len(pathogens.peptides)
