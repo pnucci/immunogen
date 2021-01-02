@@ -20,7 +20,7 @@ invalid = []
 valid = []
 for s in peptides:
     try:
-        peptide.encode_peptide_seqs([s])
+        peptide.encode_similarity_matrix([s])
         valid += [s]
     except Exception as e:
         invalid += [s]

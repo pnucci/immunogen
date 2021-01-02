@@ -1,21 +1,17 @@
-from dataset import X
-from tensorflow import keras
-from tensorflow.keras import layers, utils
-from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import Pipeline
-from dataset import X, num_outputs
-from sklearn.pipeline import Pipeline
+from tensorflow.keras import layers, utils, Sequential
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tensorflow.keras.optimizers import Adam
+from dataset import X, num_outputs
 
 
 def build_model(learning_rate):
     input_shape = X[0].shape
-    model = keras.Sequential([
-        keras.layers.LSTM(50, input_shape=input_shape, return_sequences=True),
-        keras.layers.LSTM(64),
-        keras.layers.Dense(64),
-        keras.layers.Dropout(0.5),
+    model = Sequential([
+        layers.LSTM(50, input_shape=input_shape, return_sequences=True),
+        layers.LSTM(64),
+        layers.Dense(64),
+        layers.Dropout(0.5),
         layers.Dense(units=num_outputs, activation='softmax'),
     ])
     model.compile(

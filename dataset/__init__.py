@@ -1,16 +1,16 @@
 # %%
 import pandas as pd
 import numpy as np
-import peptide
-import pathogens
-import self_binders
+from dataset import pathogens
+from dataset import self_binders
 from tensorflow.keras import utils
+import peptide
+
 
 
 # %%
-X_seqs = pathogens.peptides+self_binders.peptides
-X = peptide.encode_peptide_seqs(X_seqs)
-
+X_seqs = pathogens.peptides + self_binders.peptides
+X = peptide.encode_similarity_matrix(X_seqs)
 # %%
 y = np.array(
     [1]*len(pathogens.peptides)

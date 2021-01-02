@@ -1,4 +1,6 @@
 # %%
+import re
+import winsound
 import pickle
 import os
 from datetime import datetime
@@ -9,14 +11,12 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.model_selection import RandomizedSearchCV
-from dataset import X, y
-import cnn_solution
-import lstm_solution
-
+from chem_props_approach.config import X, y, estimator, param_distributions
+np.random.seed(0)
 RANDOM_STATE = 0
 
-solution = cnn_solution
 print(pd.Series(y).value_counts())
+print(X.shape)
 
 # %%
 
@@ -25,15 +25,15 @@ print(pd.Series(y).value_counts())
 
 cv_hyperparams = RepeatedStratifiedKFold(
     n_splits=5,
-    n_repeats=3,
+    n_repeats=2,
     random_state=RANDOM_STATE
 )
 
 hyperparam_search = RandomizedSearchCV(
-    estimator=solution.pipeline,
-    n_iter=20,
+    estimator=estimator,
+    n_iter=50,
     scoring=['average_precision', 'roc_auc'],
-    param_distributions=solution.params,
+    param_distributions=param_distributions,
     refit='roc_auc',  # using the same metric as the paper
     verbose=10,
     # n_jobs=-1,
@@ -50,8 +50,35 @@ print(results_df[['params', 'mean_test_roc_auc', 'std_test_roc_auc']])
 timestamp = datetime.now().strftime("%Y-%m-%d %H-%M")
 results_path = os.path.join('tmp', f'training_{timestamp}')
 os.makedirs(results_path, exist_ok=True)
-csv_path = os.path.join(results_path, 'hyperparams.csv')
-model_path = os.path.join(results_path, 'best_estimator.pickle')
-results_df.to_csv(csv_path)
-with open(model_path, 'wb') as out:
-    pickle.dump(results.best_estimator_, out)
+
+# detailed csv
+
+detailed_csv_path = os.path.join(results_path, 'model_selection_detailed.csv')
+results_df.to_csv(detailed_csv_path)
+
+# short csv
+
+rxs_to_remove = [
+    r'split\d.+',
+    r'.+_((fit)|(score))_time',
+    r'params'
+]
+
+
+def should_keep(col):
+    return not any(re.match(rx, col) for rx in rxs_to_remove)
+
+
+selected_cols = [c for c in results_df.columns if should_keep(c)]
+csv_path = os.path.join(results_path, 'model_selection.csv')
+results_df[selected_cols].to_csv(csv_path)
+
+# best model
+
+# model_path = os.path.join(results_path, 'best_estimator.pickle')
+# with open(model_path, 'wb') as out:
+#     pickle.dump(results.best_estimator_, out)
+
+
+# %%
+winsound.PlaySound("SystemQuestion", winsound.SND_LOOP+winsound.SND_ASYNC)

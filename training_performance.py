@@ -1,5 +1,5 @@
 import pandas as pd
-from training_hyperparams import hyperparam_search, X, y, RANDOM_STATE
+from training_model_sel import hyperparam_search, X, y, RANDOM_STATE
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.model_selection import cross_validate
 
