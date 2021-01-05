@@ -11,8 +11,6 @@ df = pd.read_excel(
     skiprows=[0]
     )
 #%%
-# df.to_csv('self_binders.csv')
-#%%
 df = df[
     (df['Allele']=='HLA-A*02-01') &
     (df['Length']==9)
@@ -20,4 +18,3 @@ df = df[
     
 peptides = list(df['Peptide Sequence'].unique())
 print(len(peptides))
-# print(peptides)

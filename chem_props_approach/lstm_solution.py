@@ -3,19 +3,21 @@ from sklearn.preprocessing import StandardScaler
 from tensorflow.keras import layers, utils, Sequential
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tensorflow.keras.optimizers import Adam
-from chem_props_approach.dataset import X, num_outputs
+from chem_props_approach import dataset
 from sklearn.preprocessing import FunctionTransformer
 
-previous = {}
+X = dataset.X
+y = dataset.y
 
+_previous_state = {}
 
 def reshape_before(X):
-    previous['shape'] = X.shape
+    _previous_state['shape'] = X.shape
     return X.reshape(-1, X.shape[-1])
 
 
 def reshape_after(X):
-    X = X.reshape(previous['shape'])
+    X = X.reshape(_previous_state['shape'])
     return X
 
 
@@ -27,7 +29,7 @@ def build_model(learning_rate, dropout, nodes_per_layer):
         layers.LSTM(nodes_per_layer),
         layers.Dense(nodes_per_layer),
         layers.Dropout(dropout),
-        layers.Dense(units=num_outputs, activation='softmax'),
+        layers.Dense(units=dataset.num_outputs, activation='softmax'),
     ])
     model.compile(
         optimizer=Adam(learning_rate=learning_rate),
@@ -37,14 +39,14 @@ def build_model(learning_rate, dropout, nodes_per_layer):
     return model
 
 
-pipeline = Pipeline([
+estimator = Pipeline([
     ('reshape_before', FunctionTransformer(func=reshape_before)),
     ('scale', StandardScaler()),
     ('reshape_after', FunctionTransformer(func=reshape_after)),
     ('model', KerasClassifier(build_fn=build_model, verbose=0)),
 ])
 
-params = dict(
+param_distributions = dict(
     model__batch_size=[25, 35, 50, 100],
     model__epochs=[10, 20, 30, 50],
     model__learning_rate=[0.005, 0.003, 0.001, 0.0005],

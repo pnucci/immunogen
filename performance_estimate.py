@@ -1,11 +1,12 @@
+# Estimates the OOS performance for the winner of the model selection procedure
+# uses nested cross-validation (each split of the outer CV might have a different winner)
+
 import pandas as pd
-from training_model_sel import hyperparam_search, X, y, RANDOM_STATE
+from model_selection import hyperparam_search, solution, RANDOM_STATE
 from sklearn.model_selection import RepeatedStratifiedKFold
 from sklearn.model_selection import cross_validate
 
 # %%
-# estimate the OOS performance for the best model
-# cross-validates (outer CV) the inner CV procedure
 
 cv_oos_performance = RepeatedStratifiedKFold(
     n_splits=5,
@@ -15,8 +16,8 @@ cv_oos_performance = RepeatedStratifiedKFold(
 
 oos_performance = cross_validate(
     estimator=hyperparam_search,
-    X=X,
-    y=y,
+    X=solution.X,
+    y=solution.y,
     cv=cv_oos_performance,
     return_estimator=True
 )

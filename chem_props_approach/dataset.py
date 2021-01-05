@@ -1,4 +1,4 @@
-import peptide
-from dataset import X_seqs, y, num_outputs
+from original_approach.dataset import X_seqs, y, num_outputs
+from chem_props_approach.encoding import encode_chemical_properties
 
-X = peptide.encode_chemical_properties(X_seqs)
+X = encode_chemical_properties(X_seqs)

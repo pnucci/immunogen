@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import peptide
+from original_approach.encoding import encode_similarity_matrix
 
 df = pd.read_csv('raw/epitope_table_export_1608718806.csv', skiprows=[0])
 df
@@ -20,7 +20,7 @@ invalid = []
 valid = []
 for s in peptides:
     try:
-        peptide.encode_similarity_matrix([s])
+        encode_similarity_matrix([s])
         valid += [s]
     except Exception as e:
         invalid += [s]

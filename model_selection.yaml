@@ -1,0 +1,11 @@
+solution_module: original_approach.cnn_solution
+random_seed: 0
+random_state: 0
+hyperparam_search:
+    n_repeats: 1
+    n_splits: 2
+    n_iter: 1
+    scoring:
+        - roc_auc                   # main metric (because the paper used roc_auc)
+        - average_precision
+output_dir: tmp

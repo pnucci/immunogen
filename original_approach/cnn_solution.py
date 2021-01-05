@@ -2,11 +2,13 @@ from tensorflow import keras
 from tensorflow.keras import layers, utils
 from sklearn.preprocessing import FunctionTransformer
 from sklearn.pipeline import Pipeline
-from dataset import X, num_outputs
+from original_approach import dataset
 from sklearn.pipeline import Pipeline
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tensorflow.keras.optimizers import Adam
 
+X = dataset.X
+y = dataset.y
 
 def build_model(
     learning_rate,
@@ -15,7 +17,6 @@ def build_model(
     initial_filters,
     dropout
 ):
-    print(locals())
     input_shape = (*X[0].shape, 1)
     model = keras.Sequential()
     model.add(keras.Input(shape=(input_shape)))
@@ -27,7 +28,7 @@ def build_model(
         model.add(layers.MaxPool2D())
     model.add(layers.Flatten())
     model.add(layers.Dropout(dropout))
-    model.add(layers.Dense(units=num_outputs, activation='softmax'))
+    model.add(layers.Dense(units=dataset.num_outputs, activation='softmax'))
 
     model.compile(
         optimizer=Adam(learning_rate=learning_rate),
@@ -42,17 +43,18 @@ def reshape_3d(x):
     return x.reshape(*x.shape, 1)
 
 
-pipeline = Pipeline([
+estimator = Pipeline([
     ('reshape', FunctionTransformer(func=reshape_3d)),
     ('model', KerasClassifier(build_fn=build_model, verbose=0)),
 ])
 
-params = dict(
+param_distributions = dict(
     model__batch_size=[50, 100, 200],
     model__epochs=[20, 50],
     model__learning_rate=[0.001, 0.005],
     model__blocks=[1, 2],
     model__kernel_size=[2, 3],
-    model__initial_filters=[30, 60],
+    # model__initial_filters=[30, 60],
+    model__initial_filters=[5],
     model__dropout=[0.2, 0.4],
 )
