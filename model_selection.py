@@ -12,13 +12,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sn
 import matplotlib.pyplot as plt
+import yaml
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.model_selection import RandomizedSearchCV
-import yaml
+from skopt import BayesSearchCV
+from copy import copy
 
 with open('model_selection.yaml', 'r') as yamlfile:
     config = yaml.safe_load(yamlfile)
+print(config)
 
 solution = importlib.import_module(config['solution_module'])
 
@@ -36,21 +38,21 @@ cv_hyperparams = RepeatedStratifiedKFold(
     random_state=RANDOM_STATE
 )
 
-hyperparam_search = RandomizedSearchCV(
+hyperparam_search = BayesSearchCV(
     estimator=solution.estimator,
-    param_distributions=solution.param_distributions,
+    search_spaces=solution.search_spaces,
     n_iter=config['hyperparam_search']['n_iter'],
     scoring=config['hyperparam_search']['scoring'],
     refit=config['hyperparam_search']['scoring'][0],
-    verbose=10,
+    # error_score=0,
     # n_jobs=-1,
+    verbose=10,
     cv=cv_hyperparams
 )
 
 results = hyperparam_search.fit(solution.X, solution.y)
 results_df = pd.DataFrame(results.cv_results_)
-results_df = results_df.sort_values('rank_test_roc_auc')
-print(results_df[['params', 'mean_test_roc_auc', 'std_test_roc_auc']])
+# results_df = results_df.sort_values('rank_test_roc_auc')
 
 # save results
 
@@ -83,8 +85,10 @@ selected_cols = [c for c in results_df.columns if should_keep(c)]
 csv_path = os.path.join(results_path, 'model_selection.csv')
 results_df[selected_cols].to_csv(csv_path)
 
-# best model
-
-# model_path = os.path.join(results_path, 'best_estimator.pickle')
-# with open(model_path, 'wb') as out:
-#     pickle.dump(results.best_estimator_, out)
+search_cv_path = os.path.join(results_path, 'search_cv2.pickle')
+clone = copy(hyperparam_search)
+# remove KerasClassifier wrapper instance
+# (there is a known bug if we try to persist it with pickle)
+clone.best_estimator_ = None
+with open(search_cv_path, 'wb') as out:
+    pickle.dump(clone, out)

@@ -1,11 +1,15 @@
 solution_module: original_approach.cnn_solution
+# solution_module: chem_props_approach.cnn_solution
 random_seed: 0
 random_state: 0
 hyperparam_search:
-    n_repeats: 1
-    n_splits: 2
-    n_iter: 1
-    scoring:
-        - roc_auc                   # main metric (because the paper used roc_auc)
-        - average_precision
+    # n_iter: 1
+    # n_repeats: 1
+    # n_splits: 2
+    n_iter: 100
+    n_repeats: 3
+    n_splits: 5
+    scoring: roc_auc
+        # - roc_auc                   # main metric (because the paper used roc_auc)
+        # - average_precision
 output_dir: tmp

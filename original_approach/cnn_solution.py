@@ -6,9 +6,11 @@ from original_approach import dataset
 from sklearn.pipeline import Pipeline
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from tensorflow.keras.optimizers import Adam
+from skopt.space import Real, Categorical, Integer
 
 X = dataset.X
 y = dataset.y
+
 
 def build_model(
     learning_rate,
@@ -48,13 +50,33 @@ estimator = Pipeline([
     ('model', KerasClassifier(build_fn=build_model, verbose=0)),
 ])
 
-param_distributions = dict(
+param_distributions_original = dict(
     model__batch_size=[50, 100, 200],
     model__epochs=[20, 50],
     model__learning_rate=[0.001, 0.005],
     model__blocks=[1, 2],
     model__kernel_size=[2, 3],
-    # model__initial_filters=[30, 60],
-    model__initial_filters=[5],
+    model__initial_filters=[30, 60],
     model__dropout=[0.2, 0.4],
+)
+
+
+param_distributions = dict(
+    model__batch_size=[50, 100, 200],
+    model__epochs=[20, 40, 60, 90],
+    model__learning_rate=[0.001, 0.003, 0.005],
+    model__blocks=[1, 2, 3, 4],
+    model__kernel_size=[2, 3, 4],
+    model__initial_filters=[200, 300, 500],
+    model__dropout=[0.2, 0.3, 0.4, 0.5, 0.6],
+)
+
+search_spaces = dict(
+    model__batch_size=Integer(10, 300),
+    model__epochs=Integer(5, 50),
+    model__learning_rate=Real(0.0001, 0.01, prior='log-uniform'),
+    model__blocks=Integer(1, 3),
+    model__kernel_size=Integer(2, 5),
+    model__initial_filters=Integer(10, 500),
+    model__dropout=Real(0.2, 0.4),
 )

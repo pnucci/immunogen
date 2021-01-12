@@ -1,6 +1,9 @@
-seaborn==0.11.0
 pandas==1.1.4
-numpy==1.18.5
+scikit_optimize==0.8.1
+seaborn==0.11.0
 tensorflow==2.3.1
 matplotlib==3.3.2
-scikit_learn==0.24.0
+numpy==1.18.5
+PyYAML==5.3.1
+scikit_learn==0.23.2
+
